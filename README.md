@@ -4,46 +4,48 @@
 
 Predict and verify **post-translational modification (PTM) sites** on G-protein-coupled receptors (GPCRs). Given a GPCR (gene name, UniProt accession, or protein name), it outputs both **verified** PTM sites (curated from public databases) and **predicted** PTM sites (rule-based candidates), and it checks every cited publication to confirm it really supports each site.
 
-Two ways to use it: a **web interface** (Flask, with progress bar) or a **command line**.
+Two ways to use it: a **web interface** (Flask, with progress bar) or a **command line**. The report and labels it produces are in Chinese; the terms used in the output are explained below.
 
 ---
 
 ## Usage
 
-### Quick start
+### Web interface — opens automatically
 
 **Linux / macOS**
 
 ```bash
-bash run.sh          # installs everything on first run, then starts the web server
-# open http://127.0.0.1:8000
+bash run.sh          # installs everything on first run, starts the server, and opens the page in your browser
 ```
 
-**Windows** — double-click `run.bat`, then open http://127.0.0.1:8000
+**Windows** — double-click `run.bat` (the browser opens automatically).
 
-**Manual install**
+**Manual** — `venv/bin/python webapp.py` (or `python3 webapp.py` if installed globally) also opens the browser automatically.
+
+You do not need to type a URL. If the browser does not open by itself (e.g. on a headless server), go to `http://127.0.0.1:8000` manually.
+
+### Command line — no web server needed
+
+After installing, you can use the tool directly without starting `webapp.py`:
+
+```bash
+python main.py ADRB2                        # gene name
+python main.py P07550                       # UniProt accession
+python main.py OPRM1 --verbose              # also print per-PMID links/evidence in the terminal
+```
+
+### Install requirements
+
+Requires Python 3.8+. One-time setup:
 
 ```bash
 python3 -m venv --without-pip venv
 curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 venv/bin/python get-pip.py
 venv/bin/pip install -r requirements.txt
-venv/bin/python webapp.py
 ```
 
-Requires Python 3.8+.
-
-### Web interface
-
-Open http://127.0.0.1:8000, type a GPCR (e.g. `ADRB2`, `P07550`, `OPRM1`), and wait for the progress bar. Results are cached, so repeat queries are instant.
-
-### Command line
-
-```bash
-python main.py ADRB2
-python main.py P07550
-python main.py OPRM1 --verbose      # also print per-PMID links/evidence in the terminal
-```
+(`run.sh` / `run.bat` do all of the above automatically on first run.)
 
 ---
 
@@ -53,15 +55,15 @@ python main.py OPRM1 --verbose      # also print per-PMID links/evidence in the 
 
 **Rule-based, not machine learning.** The program does not train on data or learn parameters. It applies explicit, well-established biological rules, so every result has a traceable reason and is fully reproducible.
 
-### The three layers
+### How results are organised
 
-Results are organised into three layers — read them in this order. The first two come from curated databases, the third is predicted by the program:
+Results fall into categories by how solid their evidence is (the report shows these in Chinese):
 
-- **L1 · Verified** — experimentally reported sites, curated with PMIDs. Highest confidence; treat these as known modifications.
-- **L2 · Supported** — support exists but is not fully settled: inferred / by-similarity annotations, database or literature hits, or single high-throughput detections (flagged "needs experimental confirmation"). Likely but unconfirmed.
-- **L3 · Predicted** — rule-based candidates not found in any database. Ranked suggestions for follow-up, not established facts.
+- **已查证 (Verified)** — experimentally reported sites, curated with PMIDs. Highest confidence; treat these as known modifications.
+- **有支持 (Supported)** — support exists but is not fully settled: inferred / by-similarity annotations, database or literature hits, or single high-throughput detections (flagged "需实验确认", i.e. needs experimental confirmation). Likely but unconfirmed.
+- **预测 (Predicted)** — computed candidates not found in any database. Ranked suggestions for follow-up, not established facts.
 
-### How L3 prediction works
+### How prediction works
 
 Candidates are produced in three steps:
 
@@ -69,18 +71,18 @@ Candidates are produced in three steps:
 2. **Topology filter** — keep only sites in the biochemically correct location: N-glycosylation must be extracellular; phosphorylation / palmitoylation must be intracellular. This removes most false positives.
 3. **Conservation & scoring** — compare with orthologs from other species; conserved sites get more weight, then everything is ranked.
 
-### The literature verification verdicts
+### The literature verdicts
 
-For every PMID cited by a database, the paper's PubMed abstract is checked to confirm **that residue + that PTM type**, giving one of:
+For every PMID cited by a database, the paper's PubMed abstract is checked to confirm **that residue + that PTM type**. Each PMID carries one of these verdicts (shown in Chinese):
 
-- **Direct** — the abstract names this residue and this modification.
-- **Indirect** — the paper is about this protein and this modification, but does not name the residue.
-- **Unsupported** — the abstract points to a different residue or a different protein (e.g. a Tyr364 paper attached to a Ser364 site). This usually flags a database mis-annotation.
+- **直接 (Direct)** — the abstract names this residue and this modification.
+- **间接 (Indirect)** — the paper is about this protein and this modification, but does not name the residue.
+- **不支持 (Unsupported)** — the abstract points to a different residue or a different protein (e.g. a Tyr364 paper attached to a Ser364 site). This usually flags a database mis-annotation.
 
 ### Score & confidence
 
-- **Score** — a ranking value (0–1). It only orders candidates; it is **not** a probability.
-- **Confidence** — High / Medium / Low, derived from motif strength + conservation. Consensus motifs are necessary but not sufficient, so treat rankings as hypotheses.
+- **得分 (Score)** — a ranking value (0–1). It only orders candidates; it is **not** a probability.
+- **置信度 (Confidence)** — High / Medium / Low, derived from motif strength + conservation. Consensus motifs are necessary but not sufficient, so treat rankings as hypotheses.
 
 ### Output files
 
