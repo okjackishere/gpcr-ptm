@@ -149,5 +149,54 @@
     "if_user_requests_push": "cd <project_root> && git add -A && git commit -m \"...\" && git push (SSH configured, no auth needed)",
     "if_new_machine": "git clone git@github.com:okjackishere/gpcr-ptm.git (or copy SSH key first); then bash run.sh",
     "details_file": "GITHUB_PUSH.md in repo root has the same push instructions"
+  },
+
+  "session_log": {
+    "context_note": "Meaningful context from the original development conversation (2026-08-06 ~ 08-07). The full verbatim transcript is kept locally at ~/gpcr-ptm-transcript.md (NOT in the repo). This section lets a new session resume without re-reading the whole chat.",
+    "origin": "User wanted a program that, given a GPCR, outputs verified/verifiable PTM sites AND predicts possible unverified ones, with the logic explained and validated scientifically BEFORE coding. Project dir was originally named gprt_ptm, renamed to gpcr-ptm.",
+    "key_decisions": [
+      "Prediction is RULE-BASED (consensus motif + membrane topology + cross-species conservation), NOT machine learning; scores are ranking-only, never probabilities.",
+      "Evidence grading: UniProt experimental (ECO:0000269) = L1 Verified; inferred/by-similarity (ECO:0000255/0305/7744), iPTMnet/dbPTM literature, and single high-throughput hits = L2 Supported (HTP flagged '需实验确认'); rule-based candidates = L3 Predicted.",
+      "Fixed evidence-grading inversion found in the original prototype: iPTMnet sites were all marked 'Verified' score 1.0 regardless of evidence quality; UniProt experimental sites could rank lower. Now merged keeping the highest layer, with per-source evidence.",
+      "Fixed a circular 'prior' in scoring (same-type PTM sites elsewhere in the protein boosted every candidate) - removed; score = base*(0.4+0.6*conservation).",
+      "Topology-aware filtering: N-glycosylation only in extracellular domains; phosphorylation/palmitoylation only in intracellular domains.",
+      "Ubiquitination is reported from databases only (no reliable linear consensus for rule prediction).",
+      "Per-PMID literature verification against PubMed abstracts; verdicts 直接(Direct)/间接(Indirect)/不支持(Unsupported), with protein-agnostic keywords from the UniProt entry.",
+      "Original prototype bugs fixed: PKA regex was wrong (R.R.[ST]); acetyl-lysine was mis-classified as ubiquitination; C-glycosylation was folded into N-glycosylation."
+    ],
+    "verification_findings": [
+      "ADRB2 (P07550): 7 L1 / 22 L2 / 9 L3; 34 unique PMIDs all verified real and directly relevant to beta-2-AR.",
+      "Automated verdicts correctly catch mis-attributions: S364's only cited PMID (8557631) is actually about Tyr364, not Ser364; Y326's PMID 12436935 is a vasopressin-receptor paper.",
+      "PMID 28467637 (N-glycosylation paper) names Asn6/15/187 in full text but its PubMed abstract does not - those sites judged 间接 (abstracts-only limitation).",
+      "OPRM1 (P35372): correctly shows L1 empty (its UniProt phospho annotations are by-similarity), known C353 palmitoylation and N-term glyco sites in L2."
+    ],
+    "ui_and_readme_evolution": [
+      "Console report got a verification column then per-PMID sub-rows (links + verdict + evidence), default compact with --verbose for full detail.",
+      "Web UI (Flask): async jobs + progress polling (/api/submit, /api/status, /api/result); auto-opens browser (--no-browser to disable); in-memory result cache; invalid input -> friendly error.",
+      "HTML report: gradient header + stat cards, collapsible <details> site cards, color-coded verdict pills, sequence overview always visible (not collapsible per user request).",
+      "README final form: English README.md with a badge button to README.zh-CN.md; sections = intro, Usage (minimal), Reading the Output (method integrated, terms shown as 中文(English)), Data Sources, License; removed project tree/cache/Features/layer-table; no separate caveats section."
+    ],
+    "infrastructure": [
+      "System Python 3.14.4 has NO pip/ensurepip (Debian/Ubuntu PEP 668). Use venv created with `python3 -m venv --without-pip` + get-pip.py bootstrap.",
+      "run.sh (Linux/macOS) and run.bat (Windows) do one-command setup + start.",
+      "venv packages: flask 3.1.3, requests 2.34.2.",
+      "run.sh tested on a fresh environment (venv -> pip bootstrap -> deps -> server up in ~75s)."
+    ],
+    "git_and_github": [
+      "Remote: git@github.com:okjackishere/gpcr-ptm.git, branch main tracks origin/main.",
+      "Commit emails were rewritten to okjackishere@users.noreply.github.com via git-filter-repo + force push on 2026-08-07 (personal email fully removed from history; verify via GitHub API or `git log --format='%ae'`).",
+      "Local git identity uses the GitHub noreply email now.",
+      "User applied 'method C' to pause direct push: ~/.ssh/id_ed25519 renamed to id_ed25519.off. To push, use: GIT_SSH_COMMAND=\"ssh -i ~/.ssh/id_ed25519.off\" git push (or rename back).",
+      "handoff.json was accidentally pushed once, then purged from history, then intentionally added back (scrubbed of personal email/absolute paths).",
+      "GITHUB_PUSH.md in repo root documents the push workflow for new sessions."
+    ],
+    "open_items": [
+      "CK2 rule checks acidic at i+1/i+2; classic [ST]xx[DE] is i+2/i+3 (slightly permissive).",
+      "CK1 rule checks S/T at i+2; classic priming [ST]xx[pS/pT] is i+3.",
+      "PKC reason text 'i-1为疏水残基(PKC偏好)' is printed but the +0.05 base bonus was NOT applied (inconsistency).",
+      "Conservation saturates near 1.0 because orthologs are found by exact gene name (mostly mammals).",
+      "Web result cache is in-memory only (lost on restart).",
+      "Decide whether to fix the motif-spacing items above."
+    ]
   }
 }
