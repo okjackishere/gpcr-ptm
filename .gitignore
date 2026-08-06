@@ -22,3 +22,4 @@ data/iptmnet_ptm.txt
 # 编辑器 / 系统
 .DS_Store
 *.log
+handoff.json
