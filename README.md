@@ -1,16 +1,14 @@
 # GPCR-PTM
 
-[![中文版 README](https://img.shields.io/badge/%E4%B8%AD%E6%96%87%E7%89%88_README-%E7%82%B9%E5%87%BB%E8%B7%B3%E8%BD%AC-0a7dba?style=for-the-badge)](./README.zh-CN.md)
+预测并核验 **G 蛋白偶联受体（GPCR）的翻译后修饰（PTM）位点**。输入一个 GPCR（基因名 / UniProt 编号 / 蛋白名），输出**已查证**的 PTM 位点（来自公开数据库）与**预测**的 PTM 位点（规则候选），并对引用的每一篇文献进行核验，确认它是否真的支持对应位点。
 
-Predict and verify **post-translational modification (PTM) sites** on G-protein-coupled receptors (GPCRs). Given a GPCR (gene name, UniProt accession, or protein name), it outputs both **verified** PTM sites (curated from public databases) and **predicted** PTM sites (rule-based candidates), and it checks every cited publication to confirm it really supports each site.
-
-Two ways to use it: a **web interface** (Flask, with progress bar) or a **command line**. The report and labels it produces are in Chinese; the terms used in the output are explained below.
+提供两种使用方式：**网页界面**（Flask，带进度条）与**命令行**。程序生成的报告与标注均为中文。
 
 ---
 
-## Usage
+## 使用方法
 
-### Web interface
+### 网页界面
 
 **Linux / macOS**
 
@@ -18,9 +16,9 @@ Two ways to use it: a **web interface** (Flask, with progress bar) or a **comman
 bash run.sh
 ```
 
-**Windows** — double-click `run.bat`
+**Windows** —— 双击 `run.bat`
 
-### Command line
+### 命令行
 
 ```bash
 python main.py ADRB2
@@ -28,9 +26,9 @@ python main.py P07550
 python main.py OPRM1 --verbose
 ```
 
-### Install requirements
+### 安装依赖
 
-Requires Python 3.8+. One-time setup:
+需要 Python 3.8+。一次性安装：
 
 ```bash
 python3 -m venv --without-pip venv
@@ -39,62 +37,62 @@ venv/bin/python get-pip.py
 venv/bin/pip install -r requirements.txt
 ```
 
-(`run.sh` / `run.bat` do all of the above automatically on first run.)
+（`run.sh` / `run.bat` 首次运行会自动完成以上步骤。）
 
 ---
 
-## Reading the Output
+## 输出结果阅读指南
 
-### What kind of prediction is this?
+### 这属于什么类型的预测？
 
-**Rule-based, not machine learning.** The program does not train on data or learn parameters. It applies explicit, well-established biological rules, so every result has a traceable reason and is fully reproducible.
+**基于规则的预测（rule-based），不是机器学习。** 程序不训练数据、不学习参数，而是套用明确、成熟的生物学规则，因此每个结果都有可追溯的理由、完全可复现。
 
-### How results are organised
+### 结果如何分类
 
-Results fall into categories by how solid their evidence is (the report shows these in Chinese):
+结果按证据强度分为几类，报告中直接显示这些中文名称：
 
-- **已查证 (Verified)** — experimentally reported sites, curated with PMIDs. Highest confidence; treat these as known modifications.
-- **有支持 (Supported)** — support exists but is not fully settled: inferred / by-similarity annotations, database or literature hits, or single high-throughput detections (flagged "需实验确认", i.e. needs experimental confirmation). Likely but unconfirmed.
-- **预测 (Predicted)** — computed candidates not found in any database. Ranked suggestions for follow-up, not established facts.
+- **已查证** —— 有实验报道、带 PMID 的位点。可信度最高，可视为已知修饰。
+- **有支持** —— 有支持但尚未定论的位点：推断 / 相似性注释、数据库或文献命中、或高通量单一检出（这类会标注"需实验确认"）。可信度较高但未证实。
+- **预测** —— 数据库中未记录的候选位点，是排序后的建议，不是既定事实。
 
-### How prediction works
+### 预测如何实现
 
-Candidates are produced in three steps:
+候选位点分三步产生：
 
-1. **Motif scan** — search the sequence for well-established consensus motifs (phosphorylation, N-glycosylation sequons, palmitoylation).
-2. **Topology filter** — keep only sites in the biochemically correct location: N-glycosylation must be extracellular; phosphorylation / palmitoylation must be intracellular. This removes most false positives.
-3. **Conservation & scoring** — compare with orthologs from other species; conserved sites get more weight, then everything is ranked.
+1. **motif 扫描** —— 在序列中搜索公认的共识 motif（磷酸化、N-糖基化 sequon、棕榈酰化）。
+2. **膜拓扑过滤** —— 只保留生化上正确的位置：N-糖基化必须在胞外；磷酸化 / 棕榈酰化必须在胞内。这一步滤掉绝大多数假阳性。
+3. **保守性与评分** —— 与其他物种的直系同源比对，跨物种保守的位点权重更高，最后统一排序。
 
-### The literature verdicts
+### 文献逐条核验
 
-For every PMID cited by a database, the paper's PubMed abstract is checked to confirm **that residue + that PTM type**. Each PMID carries one of these verdicts (shown in Chinese):
+对数据库引用的每个 PMID，程序抓取该文 PubMed 摘要，确认是否真正支持"**该残基 + 该 PTM 类型**"，给出三种判定：
 
-- **直接 (Direct)** — the abstract names this residue and this modification.
-- **间接 (Indirect)** — the paper is about this protein and this modification, but does not name the residue.
-- **不支持 (Unsupported)** — the abstract points to a different residue or a different protein (e.g. a Tyr364 paper attached to a Ser364 site). This usually flags a database mis-annotation.
+- **直接** —— 摘要点名了该残基与该修饰。
+- **间接** —— 论文确实在讲该蛋白的该修饰，但未点名该残基。
+- **不支持** —— 摘要指向的是别的残基或别的蛋白（例如把 Tyr364 的论文挂在 Ser364 位点上）。这类情况往往暴露了数据库的误归属。
 
-### Score & confidence
+### 分数与置信度
 
-- **得分 (Score)** — a ranking value (0–1). It only orders candidates; it is **not** a probability.
-- **置信度 (Confidence)** — High / Medium / Low, derived from motif strength + conservation. Consensus motifs are necessary but not sufficient, so treat rankings as hypotheses.
+- **得分** —— 0–1 的排序值，**只用于排序，不代表概率**。
+- **置信度** —— High / Medium / Low，由 motif 强度 + 保守性决定。共识 motif 只是必要而非充分条件，请把排序当作假设参考。
 
-### Output files
+### 输出文件
 
-| File | What it is |
-|------|-----------|
-| `P07550_report.html` | Interactive report: collapsible site cards, clickable PubMed links, sequence overview — open in any browser |
-| `P07550_ptm.json` | Structured data for further analysis |
-| `P07550_verification.md` | Literature-verification table with links and abstract evidence |
+| 文件 | 用途 |
+|------|------|
+| `P07550_report.html` | 交互式报告：可折叠位点卡片、可点 PubMed 链接、序列标注 —— 浏览器打开 |
+| `P07550_ptm.json` | 结构化数据，便于进一步分析 |
+| `P07550_verification.md` | 带链接与摘要证据的文献核验表 |
 
 ---
 
-## Data Sources
+## 数据来源
 
-- **UniProt** — sequence, topology, PTM annotations and evidence codes
-- **iPTMnet** — literature-curated PTM sites (with PMIDs)
-- **dbPTM** — optional offline PTM dataset
-- **PubMed** — abstracts used for per-PMID verification
+- **UniProt** —— 序列、拓扑、PTM 注释与证据代码
+- **iPTMnet** —— 带 PMID 的文献 PTM 位点
+- **dbPTM** —— 可选的离线 PTM 数据集
+- **PubMed** —— 逐条核验所用的摘要
 
 ## License
 
-Released under the [MIT License](LICENSE). Please cite the underlying data sources (UniProt, iPTMnet, dbPTM, PubMed) when using results.
+本项目采用 [MIT License](LICENSE) 开源。引用结果时请注明底层数据来源（UniProt、iPTMnet、dbPTM、PubMed）。
