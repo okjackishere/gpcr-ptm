@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "title": "GPCR-PTM project handoff",
+    "purpose": "Continue the GPCR-PTM conversation from a new machine / new session. Read this file first.",
+    "language_note": "User communicates in Chinese; respond in Chinese unless asked otherwise.",
+    "created": "2026-08-07"
+  },
+
+  "machine": {
+    "project_path": "gpcr-ptm/ (project root; clone from the GitHub repo)",
+    "system_python": "system Python 3.14.4, NO pip / NO ensurepip, Debian/Ubuntu PEP 668 externally-managed",
+    "venv": "venv/ inside the project root (created with `python3 -m venv --without-pip`, pip bootstrapped via get-pip.py)",
+    "venv_packages": {"flask": "3.1.3", "requests": "2.34.2"},
+    "git_identity": {"name": "okjackishere", "email": "okjackishere@users.noreply.github.com"},
+    "ssh_key": "~/.ssh/id_ed25519 (public key registered on GitHub; passwordless push works)"
+  },
+
+  "repository": {
+    "github": "https://github.com/okjackishere/gpcr-ptm",
+    "remote": "git@github.com:okjackishere/gpcr-ptm.git",
+    "branch": "main (tracks origin/main)",
+    "history_note": "Personal email was scrubbed from all commit history on 2026-08-07 via filter-repo + force push; commits now use the GitHub noreply address. This file (handoff.json) is tracked in the repo.",
+    "commits": [
+      "9645479 Initial commit: GPCR-PTM predictor and verifier with Flask web UI",
+      "c3dd62e Rewrite README: rule-based method explained, EN + zh-CN versions",
+      "27a4167 README: remove caveats section, merge method into reading guide, add zh-CN switch button",
+      "1ffa7f5 webapp: auto-open browser; README: simplify usage & reading guide with zh-CN terms",
+      "c9f8f90 README: simplify usage section",
+      "c74c050 Add GITHUB_PUSH.md: push handoff instructions for new sessions",
+      "ddc2631 Remove handoff.json (not meant for repo); gitignore it"
+    ],
+    "tracked_files": [
+      "README.md", "README.zh-CN.md", "LICENSE", "GITHUB_PUSH.md", "handoff.json", ".gitignore",
+      "main.py", "webapp.py", "output.py", "verify_pmids.py", "verified.py", "predict.py",
+      "conservation.py", "topology.py", "scoring.py", "resolve.py", "fetch.py",
+      "ptm_sources.py", "local_db.py", "download_data.py", "update_ptm_db.py",
+      "run.sh", "run.bat", "requirements.txt", "__init__.py", "data/ptm_extensions.tsv"
+    ],
+    "gitignored": ["venv/", "__pycache__/", "*.pyc", "*_ptm.json", "*_report.html",
+                   "*_verification.md", "verification_report.*",
+                   "data/pmid_abstract_cache.json", "data/*.dat", "data/*.dat.gz",
+                   "data/dbptm.txt", "data/iptmnet_ptm.txt"]
+  },
+
+  "project": {
+    "summary": "Predict and verify post-translational modification (PTM) sites on G-protein-coupled receptors (GPCRs). Given a GPCR (gene name / UniProt accession / protein name), outputs verified PTM sites (from UniProt/iPTMnet/dbPTM) plus predicted candidates, and verifies every cited PMID against its PubMed abstract.",
+    "prediction_type": "RULE-BASED (motif + topology + conservation), NOT machine learning. No training, no parameters, fully reproducible.",
+    "interfaces": ["Flask web UI (auto-opens browser, async progress bar)", "CLI"],
+    "languages_in_output": "Reports/labels are in Chinese (report HTML + console)."
+  },
+
+  "architecture": {
+    "pipeline": [
+      "resolve input (gene/accession/name) -> UniProt entry",
+      "fetch UniProt REST + iPTMnet REST",
+      "build membrane topology (N-term/TM/ECL/ICL/C-tail) from UniProt features (KD-window fallback if unannotated)",
+      "extract verified sites (L1/L2) with evidence grading + per-PMID PubMed verification",
+      "rule-based prediction (L3): consensus motif scan -> topology filter -> cross-species conservation -> scoring",
+      "merge + sort (L1 -> L2 -> L3, then score)",
+      "output: report HTML / JSON / Markdown"
+    ],
+    "modules": {
+      "main.py": "CLI entry; analyze(gpcr_input, refresh, progress, record) -> (results, record, entry, steps); raises AnalysisError instead of sys.exit",
+      "webapp.py": "Flask app; routes /, /api/submit (POST), /api/status, /api/result; async jobs via threading; in-memory CACHE {accession: html}; auto-opens browser (--no-browser to disable)",
+      "output.py": "print_report (console, verbose flag), save_json, write_verification_md, build_html(results, record, entry, with_search) -> str, render_html (writes file)",
+      "verify_pmids.py": "per-PMID verification; fetches PubMed title+abstract (XML primary, text fallback); verdict: 直接/间接(提及位点)/间接(未点名位点)/不支持(位点不符)/不支持(非该蛋白); cache data/pmid_abstract_cache.json; protein_keywords_from_entry()",
+      "verified.py": "extract_verified(entry, iptmnet_data, topology, progress); three evidence layers; merges records keeping highest layer",
+      "predict.py": "L3 motifs: PKA [RK][RK]x[ST], PKC [ST]x[RK], CK2 [ST]xx[DE], CK1 [ST]xx[ST], CDK/MAPK [ST]P, proline-directed [ST]P, GRK-candidate (positional hint); N-glyco sequon N-X-S/T (X!=P); palmitoylation juxtamembrane/K-R-rich; NO ubiquitination prediction",
+      "conservation.py": "Needleman-Wunsch global alignment vs orthologs fetched by exact gene name (mammals mostly); fetch_orthologs(gene) uses reviewed:true",
+      "topology.py": "build_topology_map(entry); uses UniProt Topological domain descriptions first, then Transmembrane features, gap inference; KD-window fallback if no annotations (labels N-term only unless >=4 TM runs)",
+      "scoring.py": "score = base * (0.4 + 0.6 * conservation); confidence High/Medium/Low; no circular prior (removed)",
+      "resolve.py": "resolve_input(text) -> record dict via UniProt search; prefers human + reviewed",
+      "fetch.py": "fetch_uniprot, fetch_iptmnet",
+      "ptm_sources.py": "iPTMnet API mapping (N-glyco only; C-glyco excluded), dbPTM flat-file parser, iPTMnet-bulk parser",
+      "local_db.py": "Swiss-Prot flat file parser with /evidence=ECO extraction; acetyl-lysine NOT classified as ubiquitination",
+      "download_data.py": "optional UniProt human Swiss-Prot flat file (~120MB) via --refresh",
+      "update_ptm_db.py": "optional dbPTM / iPTMnet-bulk downloads",
+      "run.sh": "Linux/macOS one-command setup+start; uses --without-pip venv + get-pip.py bootstrap (handles PEP 668 / missing ensurepip)",
+      "run.bat": "Windows one-command setup+start (uses ensurepip)"
+    }
+  },
+
+  "layer_system": {
+    "L1 Verified 已查证": "UniProt experimental evidence (ECO:0000269, with PMID)",
+    "L2 Supported 有支持": "inferred/by-similarity (ECO:0000255/0305/7744), iPTMnet/dbPTM literature or single high-throughput hits (flagged 需实验确认)",
+    "L3 Predicted 预测": "rule-based candidates not in any database",
+    "verdicts": {
+      "直接 (Direct)": "abstract names this residue + this modification",
+      "间接 (Indirect)": "paper about this protein + modification but residue not named",
+      "不支持 (Unsupported)": "abstract points to different residue/protein (e.g. Tyr364 paper on a Ser364 site) -> flags database mis-annotation"
+    }
+  },
+
+  "data_sources": {
+    "UniProt": "REST API: sequence, topology, features, evidence codes",
+    "iPTMnet": "REST API: literature PTM sites with PMIDs",
+    "dbPTM": "optional offline dataset (update_ptm_db.py --dbptm)",
+    "PubMed": "NCBI eutils efetch, abstracts for verification (XML parse, text fallback, rate-limited 0.35s, cached)",
+    "offline_swissprot": "optional, python main.py --refresh (~120MB)"
+  },
+
+  "outputs": {
+    "files": {
+      "{acc}_report.html": "interactive collapsible report (site cards, clickable pubmed links, sequence overview)",
+      "{acc}_ptm.json": "structured results incl. per-site pmid_verification",
+      "{acc}_verification.md": "verification table with links + evidence"
+    },
+    "example": "Query P07550 (ADRB2) produced 7 L1 / 22 L2 / 9 L3 sites; 34 unique PMIDs verified."
+  },
+
+  "usage": {
+    "web": "bash run.sh (Linux/macOS) or double-click run.bat (Windows); browser opens automatically; type a GPCR like ADRB2 / P07550 / OPRM1",
+    "cli": "python main.py ADRB2 | python main.py P07550 | python main.py OPRM1 --verbose",
+    "install": "python3 -m venv --without-pip venv; curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py; venv/bin/python get-pip.py; venv/bin/pip install -r requirements.txt"
+  },
+
+  "testing_notes": {
+    "validated_receptors": ["P07550 / ADRB2 (beta-2 adrenergic)", "P35372 / OPRM1 (mu-opioid)"],
+    "verified_output": "All 38 ADRB2 entries cross-checked: residue/region/context match; PMIDs real; automated verdicts catch mis-attributions (S364->8557631 is Tyr364 not Ser364; Y326->12436935 is vasopressin paper)",
+    "webapp": "tested /, /api/submit, /api/status (async progress), /api/result, invalid-input 404, cache hit; --no-browser works",
+    "run.sh": "tested fresh-environment path (venv create -> pip bootstrap -> install deps -> server up, ~75s) and existing-venv path"
+  },
+
+  "known_issues_and_open_items": {
+    "motif_spacing_minor": [
+      "CK2 rule checks acidic at i+1/i+2; classic [ST]xx[DE] is i+2/i+3 (slightly permissive)",
+      "CK1 rule checks S/T at i+2; classic priming [ST]xx[pS/pT] is i+3",
+      "PKC reason text 'i-1为疏水残基(PKC偏好)' is printed but the +0.05 base bonus was NOT applied (inconsistency)"
+    ],
+    "conservation_saturation": "orthologs found by exact gene name -> mostly mammals; conserved regions saturate near 1.0 (limitation, documented)",
+    "abstracts_only": "verification uses PubMed abstracts only; some sites confirmed only in full text (e.g. N6/N15/N187 glyco abstract does not name residues -> judged 间接)",
+    "result_cache": "web app CACHE is in-memory only; lost on restart",
+    "pending": "decide whether to fix motif-spacing items above (user was informed earlier but moved on)"
+  },
+
+  "user_preferences": {
+    "language": "Chinese",
+    "communication": "concise; explain logic before executing large changes; user reviews science/logic before approval",
+    "readme": [
+      "English README.md + separate README.zh-CN.md (button in EN README jumps to zh-CN)",
+      "remove project structure tree / cache section / Features section / layer table",
+      "method (rule-based, not ML) integrated into 'Reading the Output'",
+      "usage section minimal: just `bash run.sh`, `run.bat`, CLI commands"
+    ],
+    "web_ui": "auto-open browser; async progress bar; collapsible site cards; verdict badges; sequence overview NOT collapsible (always visible)"
+  },
+
+  "handoff_instructions_for_ai": {
+    "if_user_requests_push": "cd <project_root> && git add -A && git commit -m \"...\" && git push (SSH configured, no auth needed)",
+    "if_new_machine": "git clone git@github.com:okjackishere/gpcr-ptm.git (or copy SSH key first); then bash run.sh",
+    "details_file": "GITHUB_PUSH.md in repo root has the same push instructions"
+  }
+}

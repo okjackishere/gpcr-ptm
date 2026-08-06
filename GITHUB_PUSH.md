@@ -11,7 +11,7 @@
 | 远程仓库 | https://github.com/okjackishere/gpcr-ptm |
 | 远程地址 | `git@github.com:okjackishere/gpcr-ptm.git`（SSH，已配置） |
 | 默认分支 | `main`（已跟踪 `origin/main`） |
-| git 身份 | `okjackishere <mars-face@outlook.com>`（本地已配置） |
+| git 身份 | `okjackishere <okjackishere@users.noreply.github.com>`（本地已配置） |
 | SSH 密钥 | `~/.ssh/id_ed25519`（公钥已登记在 GitHub，免密推送） |
 
 以上均一次性配置完成，持久保存在本机，新会话无需重复设置。
@@ -39,14 +39,14 @@ ssh -T git@github.com        # 期望输出: Hi okjackishere! You've successfull
 git remote -v                # 期望: origin  git@github.com:okjackishere/gpcr-ptm.git (fetch/push)
 git status -sb               # 期望: ## main...origin/main
 git config user.name         # 期望: okjackishere
-git config user.email        # 期望: mars-face@outlook.com
+git config user.email        # 期望: okjackishere@users.noreply.github.com
 ```
 
 若身份丢失，重新设置（仅对本仓库）：
 ```bash
 cd /home/jack/gpcr-ptm
 git config user.name "okjackishere"
-git config user.email "mars-face@outlook.com"
+git config user.email "okjackishere@users.noreply.github.com"
 ```
 
 ## 换新电脑（而非新窗口）时
