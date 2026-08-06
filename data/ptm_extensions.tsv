@@ -1,0 +1,5 @@
+# User-supplied PTM sites, merged into the report as Homology layer.
+# Format: accession<TAB>position<TAB>ptm_type<TAB>source(optional)
+# ptm_type: phosphorylation | glycosylation | palmitoylation | ubiquitination
+# Example:
+# P07550	307	phosphorylation	my_lab

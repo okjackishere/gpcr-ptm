@@ -1,0 +1,24 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# 生成的输出文件 (可随时重新生成)
+*_ptm.json
+*_report.html
+*_verification.md
+verification_report.md
+verification_report.csv
+
+# 数据缓存 / 可选离线数据
+data/pmid_abstract_cache.json
+data/*.dat
+data/*.dat.gz
+data/dbptm.txt
+data/iptmnet_ptm.txt
+
+# 保留用户扩展样例 (不忽略 data/ptm_extensions.tsv)
+
+# 编辑器 / 系统
+.DS_Store
+*.log
