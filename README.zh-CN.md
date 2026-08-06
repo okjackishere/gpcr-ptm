@@ -10,28 +10,22 @@
 
 ## 使用方法
 
-### 网页界面 —— 启动后自动打开
+### 网页界面
 
 **Linux / macOS**
 
 ```bash
-bash run.sh          # 首次运行自动装好环境并启动服务，浏览器会自动打开页面
+bash run.sh
 ```
 
-**Windows** —— 双击 `run.bat`（浏览器会自动打开）。
+**Windows** —— 双击 `run.bat`
 
-**手动** —— 运行 `venv/bin/python webapp.py`（也会自动打开浏览器）。
-
-无需手动输入网址。若浏览器没有自动打开（例如无图形界面的服务器），再手动访问 `http://127.0.0.1:8000`。
-
-### 命令行 —— 无需启动网页服务
-
-安装完成后可直接使用，**不必运行 `webapp.py`**：
+### 命令行
 
 ```bash
-python main.py ADRB2                        # 基因名
-python main.py P07550                       # UniProt 编号
-python main.py OPRM1 --verbose              # 同时在终端打印每条 PMID 的链接与证据
+python main.py ADRB2
+python main.py P07550
+python main.py OPRM1 --verbose
 ```
 
 ### 安装依赖
@@ -45,7 +39,7 @@ venv/bin/python get-pip.py
 venv/bin/pip install -r requirements.txt
 ```
 
-（`run.sh` / `run.bat` 首次运行会自动完成以上全部步骤。）
+（`run.sh` / `run.bat` 首次运行会自动完成以上步骤。）
 
 ---
 

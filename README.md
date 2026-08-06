@@ -10,28 +10,22 @@ Two ways to use it: a **web interface** (Flask, with progress bar) or a **comman
 
 ## Usage
 
-### Web interface — opens automatically
+### Web interface
 
 **Linux / macOS**
 
 ```bash
-bash run.sh          # installs everything on first run, starts the server, and opens the page in your browser
+bash run.sh
 ```
 
-**Windows** — double-click `run.bat` (the browser opens automatically).
+**Windows** — double-click `run.bat`
 
-**Manual** — `venv/bin/python webapp.py` (or `python3 webapp.py` if installed globally) also opens the browser automatically.
-
-You do not need to type a URL. If the browser does not open by itself (e.g. on a headless server), go to `http://127.0.0.1:8000` manually.
-
-### Command line — no web server needed
-
-After installing, you can use the tool directly without starting `webapp.py`:
+### Command line
 
 ```bash
-python main.py ADRB2                        # gene name
-python main.py P07550                       # UniProt accession
-python main.py OPRM1 --verbose              # also print per-PMID links/evidence in the terminal
+python main.py ADRB2
+python main.py P07550
+python main.py OPRM1 --verbose
 ```
 
 ### Install requirements
