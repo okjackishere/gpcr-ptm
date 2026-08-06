@@ -1,45 +1,10 @@
 # GPCR-PTM
 
+[![中文版 README](https://img.shields.io/badge/%E4%B8%AD%E6%96%87%E7%89%88_README-%E7%82%B9%E5%87%BB%E8%B7%B3%E8%BD%AC-0a7dba?style=for-the-badge)](./README.zh-CN.md)
+
 Predict and verify **post-translational modification (PTM) sites** on G-protein-coupled receptors (GPCRs). Given a GPCR (gene name, UniProt accession, or protein name), it outputs both **verified** PTM sites (curated from public databases) and **predicted** PTM sites (rule-based candidates), and it checks every cited publication to confirm it really supports each site.
 
 Two ways to use it: a **web interface** (Flask, with progress bar) or a **command line**.
-
----
-
-## Method
-
-### What kind of prediction is this?
-
-**Rule-based, not machine learning.** The program does not train on data or learn parameters. It applies explicit, well-established biological rules, so every result has a traceable reason and is fully reproducible.
-
-### How verified sites are obtained (L1 / L2)
-
-Verified sites come from curated databases — UniProt, iPTMnet and dbPTM — and are graded by **evidence strength**:
-
-- **Experimental evidence** (reported in the literature and curated in UniProt) is ranked highest.
-- **Inferred / by-similarity annotations** and **single high-throughput hits** are ranked lower and clearly labelled (the latter are flagged "needs experimental confirmation").
-
-### How prediction works (L3)
-
-For modifications not yet recorded in any database, candidates are produced in three steps:
-
-1. **Motif scan** — search the receptor sequence for well-established consensus motifs (phosphorylation, N-glycosylation sequons, palmitoylation).
-2. **Topology filter** — keep only sites in the biochemically correct location: N-glycosylation must be extracellular; phosphorylation / palmitoylation must be intracellular. This removes most false positives.
-3. **Conservation & scoring** — compare the receptor with orthologs from other species; sites conserved across species get more weight, then all candidates are scored and ranked.
-
-### Literature verification (every cited paper is checked)
-
-For every PMID cited by a database, the program fetches the paper's PubMed abstract and judges whether it actually supports **that residue + that PTM type**, returning one of:
-
-- **Direct** — the abstract names this residue and this modification.
-- **Indirect** — the paper is about this protein and this modification, but does not name the residue.
-- **Unsupported** — the abstract points to a different residue or a different protein (e.g. a Tyr364 paper attached to a Ser364 site). This usually flags a database mis-annotation.
-
-### Why rule-based instead of machine learning?
-
-- **Transparent** — each site carries the motif, region and evidence behind it.
-- **Reproducible** — same input, same output, no randomness.
-- The PTM consensus motifs of GPCRs are already well characterised, so explicit rules are appropriate and interpretable.
 
 ---
 
@@ -84,22 +49,38 @@ python main.py OPRM1 --verbose      # also print per-PMID links/evidence in the 
 
 ## Reading the Output
 
+### What kind of prediction is this?
+
+**Rule-based, not machine learning.** The program does not train on data or learn parameters. It applies explicit, well-established biological rules, so every result has a traceable reason and is fully reproducible.
+
 ### The three layers
 
-Results are organised into three layers; read them in this order:
+Results are organised into three layers — read them in this order. The first two come from curated databases, the third is predicted by the program:
 
 - **L1 · Verified** — experimentally reported sites, curated with PMIDs. Highest confidence; treat these as known modifications.
 - **L2 · Supported** — support exists but is not fully settled: inferred / by-similarity annotations, database or literature hits, or single high-throughput detections (flagged "needs experimental confirmation"). Likely but unconfirmed.
 - **L3 · Predicted** — rule-based candidates not found in any database. Ranked suggestions for follow-up, not established facts.
 
-### The literature verdicts
+### How L3 prediction works
 
-Each PMID is marked **Direct** (green) / **Indirect** (amber) / **Unsupported** (red). Use them to judge how solid a site's citation list really is — "Unsupported" usually points to a database mis-annotation.
+Candidates are produced in three steps:
+
+1. **Motif scan** — search the sequence for well-established consensus motifs (phosphorylation, N-glycosylation sequons, palmitoylation).
+2. **Topology filter** — keep only sites in the biochemically correct location: N-glycosylation must be extracellular; phosphorylation / palmitoylation must be intracellular. This removes most false positives.
+3. **Conservation & scoring** — compare with orthologs from other species; conserved sites get more weight, then everything is ranked.
+
+### The literature verification verdicts
+
+For every PMID cited by a database, the paper's PubMed abstract is checked to confirm **that residue + that PTM type**, giving one of:
+
+- **Direct** — the abstract names this residue and this modification.
+- **Indirect** — the paper is about this protein and this modification, but does not name the residue.
+- **Unsupported** — the abstract points to a different residue or a different protein (e.g. a Tyr364 paper attached to a Ser364 site). This usually flags a database mis-annotation.
 
 ### Score & confidence
 
-- **Score** — a ranking value (0–1); it only orders candidates, it is **not** a probability.
-- **Confidence** — High / Medium / Low, derived from motif strength + conservation.
+- **Score** — a ranking value (0–1). It only orders candidates; it is **not** a probability.
+- **Confidence** — High / Medium / Low, derived from motif strength + conservation. Consensus motifs are necessary but not sufficient, so treat rankings as hypotheses.
 
 ### Output files
 
@@ -110,13 +91,6 @@ Each PMID is marked **Direct** (green) / **Indirect** (amber) / **Unsupported** 
 | `P07550_verification.md` | Literature-verification table with links and abstract evidence |
 
 ---
-
-## Scientific Basis & Caveats
-
-- Consensus motifs are **necessary but not sufficient** — e.g. only ~30–40% of N-glycosylation sequons are actually used, and phospho motifs are weak predictors. Scores are for ranking only.
-- Conservation is computed against orthologs found by exact gene name (mostly mammals), so conserved regions saturate near 1.0.
-- An **"Unsupported"** verdict means the cited paper does not support that residue + PTM; it does not necessarily mean the site is wrong.
-- Predictions are hypotheses and should be confirmed experimentally (e.g. by mass spectrometry) before drawing conclusions.
 
 ## Data Sources
 
