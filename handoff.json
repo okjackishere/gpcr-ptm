@@ -68,7 +68,7 @@
       "output.py": "print_report (console, verbose flag), save_json, write_verification_md, build_html(results, record, entry, with_search) -> str, render_html (writes file)",
       "verify_pmids.py": "per-PMID verification; fetches PubMed title+abstract (XML primary, text fallback); verdict: 直接/间接(提及位点)/间接(未点名位点)/不支持(位点不符)/不支持(非该蛋白); cache data/pmid_abstract_cache.json; protein_keywords_from_entry()",
       "verified.py": "extract_verified(entry, iptmnet_data, topology, progress); three evidence layers; merges records keeping highest layer",
-      "predict.py": "L3 motifs: PKA [RK][RK]x[ST], PKC [ST]x[RK], CK2 [ST]xx[DE], CK1 [ST]xx[ST], CDK/MAPK [ST]P, proline-directed [ST]P, GRK-candidate (positional hint); N-glyco sequon N-X-S/T (X!=P); palmitoylation juxtamembrane/K-R-rich; NO ubiquitination prediction",
+      "predict.py": "L3 motifs: PKA [RK][RK]x[ST], PKC [ST]x[RK] (+0.05 if i-1 hydrophobic), CK2 [ST]xx[DE] (acidic at i+2/i+3), CK1 [ST]xx[pS/pT] (priming S/T at i+3), CDK/MAPK [ST]P, proline-directed [ST]P, GRK-candidate (positional hint); N-glyco sequon N-X-S/T (X!=P); palmitoylation juxtamembrane/K-R-rich; NO ubiquitination prediction",
       "conservation.py": "Needleman-Wunsch global alignment vs orthologs fetched by exact gene name (mammals mostly); fetch_orthologs(gene) uses reviewed:true",
       "topology.py": "build_topology_map(entry); uses UniProt Topological domain descriptions first, then Transmembrane features, gap inference; KD-window fallback if no annotations (labels N-term only unless >=4 TM runs)",
       "scoring.py": "score = base * (0.4 + 0.6 * conservation); confidence High/Medium/Low; no circular prior (removed)",
@@ -122,15 +122,11 @@
   },
 
   "known_issues_and_open_items": {
-    "motif_spacing_minor": [
-      "CK2 rule checks acidic at i+1/i+2; classic [ST]xx[DE] is i+2/i+3 (slightly permissive)",
-      "CK1 rule checks S/T at i+2; classic priming [ST]xx[pS/pT] is i+3",
-      "PKC reason text 'i-1为疏水残基(PKC偏好)' is printed but the +0.05 base bonus was NOT applied (inconsistency)"
-    ],
+    "motif_spacing_minor": "FIXED 2026-08-07. (1) CK2 now checks acidic at 1-based i+2/i+3 (was i+1/i+2) -> classic [ST]xx[DE]; (2) CK1 now checks priming S/T at i+3 (was i+2) -> [ST]xx[pS/pT]; (3) PKC +0.05 hydrophobic(i-1 in IVLMFWY) base bonus now applied (reason text unchanged). Verified on ADRB2 P07550: CK1 drops false+ T66, recovers S143/T393/T408; CK2 drops S236/S396, recovers S246/S407; PKC T146 base 0.55->0.60.",
     "conservation_saturation": "orthologs found by exact gene name -> mostly mammals; conserved regions saturate near 1.0 (limitation, documented)",
     "abstracts_only": "verification uses PubMed abstracts only; some sites confirmed only in full text (e.g. N6/N15/N187 glyco abstract does not name residues -> judged 间接)",
     "result_cache": "web app CACHE is in-memory only; lost on restart",
-    "pending": "decide whether to fix motif-spacing items above (user was informed earlier but moved on)"
+    "pending": "motif-spacing items fixed 2026-08-07 (see motif_spacing_minor). Remaining items (conservation_saturation, abstracts_only, result_cache) are documented limitations, not pending fixes."
   },
 
   "user_preferences": {
@@ -166,7 +162,8 @@
       "Topology-aware filtering: N-glycosylation only in extracellular domains; phosphorylation/palmitoylation only in intracellular domains.",
       "Ubiquitination is reported from databases only (no reliable linear consensus for rule prediction).",
       "Per-PMID literature verification against PubMed abstracts; verdicts 直接(Direct)/间接(Indirect)/不支持(Unsupported), with protein-agnostic keywords from the UniProt entry.",
-      "Original prototype bugs fixed: PKA regex was wrong (R.R.[ST]); acetyl-lysine was mis-classified as ubiquitination; C-glycosylation was folded into N-glycosylation."
+      "Original prototype bugs fixed: PKA regex was wrong (R.R.[ST]); acetyl-lysine was mis-classified as ubiquitination; C-glycosylation was folded into N-glycosylation.",
+      "2026-08-07 motif-spacing fixes (predict.py): CK2 acidic check i+1/i+2 -> i+2/i+3; CK1 priming check i+2 -> i+3; PKC +0.05 hydrophobic(i-1) base bonus applied (text-only reason now backed by score). Verified on ADRB2 P07550 against the real sequence: removed false positives (T66 CK1, S236/S396 CK2) and recovered true positives the old off-by-one had missed (S143/T393/T408 CK1, S246/S407 CK2)."
     ],
     "verification_findings": [
       "ADRB2 (P07550): 7 L1 / 22 L2 / 9 L3; 34 unique PMIDs all verified real and directly relevant to beta-2-AR.",
@@ -193,12 +190,9 @@
       "GITHUB_PUSH.md was deleted on 2026-08-07; its push workflow content now lives in handoff_instructions_for_ai (commit_often_push_once + troubleshooting)."
     ],
     "open_items": [
-      "CK2 rule checks acidic at i+1/i+2; classic [ST]xx[DE] is i+2/i+3 (slightly permissive).",
-      "CK1 rule checks S/T at i+2; classic priming [ST]xx[pS/pT] is i+3.",
-      "PKC reason text 'i-1为疏水残基(PKC偏好)' is printed but the +0.05 base bonus was NOT applied (inconsistency).",
+      "FIXED 2026-08-07: CK2 spacing (i+1/i+2 -> i+2/i+3), CK1 spacing (i+2 -> i+3), PKC +0.05 hydro bonus applied. See known_issues_and_open_items.motif_spacing_minor.",
       "Conservation saturates near 1.0 because orthologs are found by exact gene name (mostly mammals).",
-      "Web result cache is in-memory only (lost on restart).",
-      "Decide whether to fix the motif-spacing items above."
+      "Web result cache is in-memory only (lost on restart)."
     ]
   }
 }

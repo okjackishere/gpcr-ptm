@@ -55,6 +55,7 @@ def predict_phospho(sequence, topology):
             continue
 
         motifs, reasons = [], []
+        pkc_hydro = False
         idx = i - 1  # 0-based index of the S/T
 
         # PKA: [RK][RK]x[S/T]  -> basic at 1-based i-3,i-2
@@ -64,12 +65,13 @@ def predict_phospho(sequence, topology):
         if i < seq_len and sequence[idx + 1] in "RK":
             motifs.append("PKC")
             if i >= 2 and sequence[idx - 1] in "IVLMFWY":
+                pkc_hydro = True
                 reasons.append("i-1为疏水残基(PKC偏好)")
         # CK2: [S/T]xx[D/E] -> acidic at i+2 or i+3
-        if any(c in "DE" for c in sequence[idx + 1:idx + 3]):
+        if any(c in "DE" for c in sequence[idx + 2:idx + 4]):
             motifs.append("CK2")
         # CK1 priming: [S/T]xx[pS/pT] -> S/T at i+3
-        if i + 2 < seq_len and sequence[idx + 2] in "ST":
+        if idx + 3 < seq_len and sequence[idx + 3] in "ST":
             motifs.append("CK1")
         # proline-directed: [S/T]P;  [S/T]Px[RK] is a better CDK/MAPK hit
         if i < seq_len and sequence[idx + 1] == "P":
@@ -86,6 +88,8 @@ def predict_phospho(sequence, topology):
 
         for m in motifs:
             base = MOTIF_BASE[m]
+            if m == "PKC" and pkc_hydro:
+                base += 0.05
             r = [f"{MOTIF_DESC[m]} (区域:{region})"] + list(reasons)
             if grk_hint:
                 base = max(base, 0.5)
