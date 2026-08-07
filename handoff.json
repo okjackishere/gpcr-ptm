@@ -8,9 +8,7 @@
 
   "machine": {
     "project_path": "gpcr-ptm/ (project root; clone from the GitHub repo)",
-    "system_python": "system Python 3.14.4, NO pip / NO ensurepip, Debian/Ubuntu PEP 668 externally-managed",
-    "venv": "venv/ inside the project root (created with `python3 -m venv --without-pip`, pip bootstrapped via get-pip.py)",
-    "venv_packages": {"flask": "3.1.3", "requests": "2.34.2"},
+    "requirements": "Python 3.8+; flask & requests (pip install -r requirements.txt). Any environment works — system Python, venv, conda, etc.",
     "git_identity": {"name": "okjackishere", "email": "okjackishere@users.noreply.github.com"},
     "ssh_key": "~/.ssh/id_ed25519 (public key registered on GitHub; passwordless push works)"
   },
@@ -21,13 +19,18 @@
     "branch": "main (tracks origin/main)",
     "history_note": "Personal email was scrubbed from all commit history on 2026-08-07 via filter-repo + force push; commits now use the GitHub noreply address. This file (handoff.json) is tracked in the repo.",
     "commits": [
-      "9645479 Initial commit: GPCR-PTM predictor and verifier with Flask web UI",
-      "c3dd62e Rewrite README: rule-based method explained, EN + zh-CN versions",
-      "27a4167 README: remove caveats section, merge method into reading guide, add zh-CN switch button",
-      "1ffa7f5 webapp: auto-open browser; README: simplify usage & reading guide with zh-CN terms",
-      "c9f8f90 README: simplify usage section",
-      "c74c050 Add GITHUB_PUSH.md: push handoff instructions for new sessions",
-      "ddc2631 Remove handoff.json (not meant for repo); gitignore it"
+      "fbf8b87 Initial commit: GPCR-PTM predictor and verifier with Flask web UI",
+      "2a6b21d Rewrite README: rule-based method explained, EN + zh-CN versions",
+      "bb6f68d README: remove caveats section, merge method into reading guide, add zh-CN switch button",
+      "491abaf webapp: auto-open browser; README: simplify usage & reading guide with zh-CN terms",
+      "1dd9fad README: simplify usage section",
+      "8373825 Add GITHUB_PUSH.md: push handoff instructions for new sessions",
+      "414df0a Remove handoff.json (not meant for repo); gitignore it",
+      "c23e0d6 Track handoff.json; use GitHub noreply email in GITHUB_PUSH.md",
+      "0c909c3 handoff.json: add session_log with full development context",
+      "b0cc95e docs: 删除英文 README，中文版 README.zh-CN.md 更名为 README.md",
+      "1a6fd30 docs: 精简 README 与 handoff，移除 run 脚本",
+      "620a380 精简README"
     ],
     "tracked_files": [
       "README.md", "LICENSE", "handoff.json", ".gitignore",
@@ -39,7 +42,7 @@
     "gitignored": ["venv/", "__pycache__/", "*.pyc", "*_ptm.json", "*_report.html",
                    "*_verification.md", "verification_report.*",
                    "data/pmid_abstract_cache.json", "data/*.dat", "data/*.dat.gz",
-                   "data/dbptm.txt", "data/iptmnet_ptm.txt"]
+                   "data/dbptm.txt", "data/iptmnet_ptm.txt", ".DS_Store", "*.log"]
   },
 
   "project": {
@@ -140,11 +143,11 @@
       "usage section: `python webapp.py` (web) and `python main.py` (CLI)"
     ],
     "web_ui": "auto-open browser; async progress bar; collapsible site cards; verdict badges; sequence overview NOT collapsible (always visible)",
-    "publishing": "DO NOT push to GitHub yet (as of 2026-08-07). User wants to batch changes into a major version before pushing. Only push when the user explicitly says the major version is ready."
+    "publishing": "Last pushed 2026-08-07 (b0cc95e/1a6fd30/620a380 on origin/main). Continue batching changes into the next major version before pushing; only push when the user explicitly says the major version is ready."
   },
 
   "handoff_instructions_for_ai": {
-    "publishing_policy": "Per user_preferences.publishing (2026-08-07): do NOT push to GitHub until the user explicitly says a major version is ready. Frequent local commits ARE encouraged as backup in the meantime.",
+    "publishing_policy": "Last major-version push: 2026-08-07 (b0cc95e/1a6fd30/620a380 on origin/main). Going forward, batch changes into the next major version before pushing; frequent local commits are encouraged as backup in the meantime.",
     "commit_often_push_once": "Workflow for pushing: commit frequently (local backup); when the major version is ready, SQUASH the unpushed commits into ONE clean commit so GitHub's history stays tidy, then push. Steps: git log origin/main..HEAD --oneline (count pending) -> git reset --soft origin/main (rewinds branch pointer, keeps all changes staged) -> git commit -m '...' (single squashed commit) -> git push. git reflog recovers the intermediate commits if ever needed.",
     "if_new_machine": "git clone git@github.com:okjackishere/gpcr-ptm.git (or copy SSH key first); then python webapp.py",
     "troubleshooting": "ssh -T git@github.com (expect 'Hi okjackishere!...'); git remote -v (expect origin git@github.com:okjackishere/gpcr-ptm.git); git status -sb (expect ## main...origin/main). Identity reset: git config user.name 'okjackishere' && git config user.email 'okjackishere@users.noreply.github.com'. If the ssh key was renamed to .off (pause-push method C): GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519.off' git push.",
