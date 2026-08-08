@@ -20,7 +20,8 @@ MODELS = {
     "phosphorylation": "Phosphorylation",
     "glycosylation": "N-Glycosylation",
     "palmitoylation": "Palmitoylation",
-    # 泛素化无可靠线性consensus, 不做规则预测; 仅由数据库给出 L1/L2
+    # 保守版: 胞内Lys + PPxY/Pro-rich 弱提示; 无线性motif, 恒Low置信, 需实验确认
+    "ubiquitination": "Ubiquitination",
 }
 
 
@@ -81,10 +82,18 @@ def analyze(gpcr_input, refresh=False, progress=None, record=None):
     emit("正在提取已查证位点并核验文献...")
     verified = extract_verified(entry, iptmnet_data, topology, progress=emit)
 
+    # 判组: pXpp 按受体 arrestin 行为分类过滤 (Isaikina 2023 Table S2 + ICL3 长度)
+    from gpcr_classify import classify_gpcr_group
+    group = classify_gpcr_group(entry, topology)
+    if group["group"]:
+        emit(f"arrestin 行为判组: {group['group']} ({group['caveat']})")
+    else:
+        emit(f"arrestin 行为判组: 未定 ({group['caveat']})")
+
     predictions = []
     for key, label in MODELS.items():
         emit(f"正在预测 {label}...")
-        preds = predict_ptms(key, sequence, topology, entry)
+        preds = predict_ptms(key, sequence, topology, entry, group=group)
         predictions.extend(preds)
 
     emit("正在计算跨物种保守性...")

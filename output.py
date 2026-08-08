@@ -131,9 +131,10 @@ def write_verification_md(results, record, path=None):
                     f"| {pos} | {esc(r['ptm_type'])} | {r['layer']} | {v['pmid']} "
                     f"| [pubmed/{v['pmid']}]({v['url']}) | {v['verdict']} | {esc(v['evidence'])} |")
         elif r.get("layer") == "Predicted":
+            refs_short = "; ".join(x["short"] for x in r.get("refs", []))
             lines.append(
                 f"| {pos} | {esc(r['ptm_type'])} | Predicted | (无PMID) | — | 规则预测 "
-                f"| motif={r.get('motif', '')}, 非数据库记录, 无文献 |")
+                f"| motif={r.get('motif', '')}, 非数据库记录, 规则文献: {refs_short} |")
         else:
             lines.append(
                 f"| {pos} | {esc(r['ptm_type'])} | {r['layer']} | (无PMID) | — | 仅高通量 "
@@ -239,6 +240,8 @@ h2.l1 .bar{background:var(--green);} h2.l2 .bar{background:var(--amber);} h2.l3 
 .pill-mid{background:#fdf0d9;color:#b45309;}
 .pill-bad{background:#fdeaea;color:#b91c1c;}
 .pred{padding:10px 18px;font-size:13px;color:var(--muted);}
+.pred a{color:var(--blue);text-decoration:none;font-weight:600;margin-right:6px;}
+.pred a:hover{text-decoration:underline;}
 /* ---------- sequence ---------- */
 pre.seq{background:#0f172a;color:#cbd5e1;border-radius:14px;padding:16px 18px;
         font-size:13px;line-height:1.75;overflow-x:auto;font-family:ui-monospace,Consolas,monospace;}
@@ -358,8 +361,14 @@ def build_html(results, record, entry, with_search=False):
                         f'<td class="ev">{h(v["evidence"])}</td></tr>')
                 body.append("</table>")
             elif r.get("layer") == "Predicted":
-                reasons = "；".join(r.get("reasons", []))
-                body.append(f'<div class="pred">规则预测 — {h(reasons)}</div>')
+                reasons = "<br>".join(h(x) for x in r.get("reasons", []))
+                body.append(f'<div class="pred"><b>规则预测</b><br>{reasons}</div>')
+                refs = r.get("refs", [])
+                if refs:
+                    rlinks = " ".join(
+                        f'<a href="{h(x["url"])}" target="_blank" title="{h(x["title"])}">{h(x["short"])}</a>'
+                        for x in refs)
+                    body.append(f'<div class="pred"><b>文献依据</b>（可点击核验）: {rlinks}</div>')
             else:
                 body.append('<div class="pred">无 PMID，高通量单一检出，需实验确认。</div>')
             body.append("</details></div>")
