@@ -22,3 +22,11 @@ data/iptmnet_ptm.txt
 # 编辑器 / 系统
 .DS_Store
 *.log
+
+# ZCode 会话数据 / 计划
+.zcode/
+
+# 会话过程文档（工作产物，非项目交付物）
+PLAN_*.md
+session_summary_*.md
+handoff.json
