@@ -150,13 +150,17 @@ def write_verification_md(results, record, path=None):
 # ---------------------------------------------------------------------------
 _CSS = """
 :root{
-  --bg:#f2f4f8; --card:#ffffff; --ink:#1c2230; --muted:#667085; --line:#e6eaf2;
+  --bg:#e9edf5; --card:#ffffff; --ink:#1c2230; --muted:#5b6577; --line:#e2e7f0;
   --blue:#2b5cf0; --violet:#7c3aed; --green:#16a34a; --amber:#d97706; --red:#dc2626;
   --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 12px rgba(16,24,40,.06);
   --shadow-lg:0 8px 30px rgba(16,24,40,.14);
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
+body{margin:0;color:var(--ink);
+     background:
+       radial-gradient(1100px 540px at 50% -180px,#dfe6f5 0%,rgba(223,230,245,0) 60%),
+       linear-gradient(180deg,#e9edf5 0%,#e4e9f2 100%);
+     background-attachment:fixed;
      font:15px/1.6 "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
 .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px;}
 /* ---------- top search bar (web) ---------- */
@@ -239,9 +243,13 @@ h2.l1 .bar{background:var(--green);} h2.l2 .bar{background:var(--amber);} h2.l3 
 .pill-ok{background:#e8f7ee;color:#15803d;}
 .pill-mid{background:#fdf0d9;color:#b45309;}
 .pill-bad{background:#fdeaea;color:#b91c1c;}
-.pred{padding:10px 18px;font-size:13px;color:var(--muted);}
+.pred{padding:10px 18px;font-size:14px;color:#374151;line-height:1.7;}
+.pred b{color:var(--ink);}
 .pred a{color:var(--blue);text-decoration:none;font-weight:600;margin-right:6px;}
 .pred a:hover{text-decoration:underline;}
+ul.reasons{margin:8px 0 8px;padding-left:20px;}
+ul.reasons li{margin:5px 0;color:#3f4654;line-height:1.65;}
+ul.reasons li::marker{color:var(--blue);}
 /* ---------- sequence ---------- */
 pre.seq{background:#0f172a;color:#cbd5e1;border-radius:14px;padding:16px 18px;
         font-size:13px;line-height:1.75;overflow-x:auto;font-family:ui-monospace,Consolas,monospace;}
@@ -361,8 +369,9 @@ def build_html(results, record, entry, with_search=False):
                         f'<td class="ev">{h(v["evidence"])}</td></tr>')
                 body.append("</table>")
             elif r.get("layer") == "Predicted":
-                reasons = "<br>".join(h(x) for x in r.get("reasons", []))
-                body.append(f'<div class="pred"><b>规则预测</b><br>{reasons}</div>')
+                rlist = "".join(f"<li>{h(x)}</li>" for x in r.get("reasons", []))
+                body.append(f'<div class="pred"><b>规则预测</b>'
+                            f'<ul class="reasons">{rlist}</ul></div>')
                 refs = r.get("refs", [])
                 if refs:
                     rlinks = " ".join(
