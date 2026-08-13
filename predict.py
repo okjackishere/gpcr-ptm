@@ -170,7 +170,8 @@ def predict_phospho(sequence, topology, group=None):
             motifs.append("CDK/MAPK" if (i + 1 < seq_len and sequence[idx + 2] in "RK")
                           else "proline-directed")
         # pXpp: [S/T]-X-[S/T]-[S/T], Isaikina 2023 (Mol Cell) arrestin2 募集保守 motif
-        # 按判组过滤: 原文表明某些组的特定区域 pXpp 缺失, 直接不报 (见 PLAN_pXpp_grouping.md)
+        # 按判组过滤(而非调权): 原文表明某些组的特定区域 pXpp 缺失, 故直接不报——
+        # 调权只改排序不改命中集合, 过滤才能实质移除假阳性
         if _is_pxpp(sequence, idx, seq_len):
             grp = group.get("group") if group else None
             if pxpp_filter(grp, region):

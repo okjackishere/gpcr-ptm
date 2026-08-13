@@ -17,8 +17,6 @@ data/*.dat.gz
 data/dbptm.txt
 data/iptmnet_ptm.txt
 
-# 保留用户扩展样例 (不忽略 data/ptm_extensions.tsv)
-
 # 编辑器 / 系统
 .DS_Store
 *.log

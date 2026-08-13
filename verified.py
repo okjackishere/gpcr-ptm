@@ -231,19 +231,6 @@ def extract_verified(entry, iptmnet_data, topology, progress=None):
     except Exception:
         pass
 
-    try:
-        from local_db import parse_extensions_tsv
-        ext = parse_extensions_tsv()
-        if acc and acc in ext:
-            for pos, ptm in ext[acc].items():
-                if not (1 <= pos <= len(seq)):
-                    continue
-                records.append(_record(
-                    ptm, pos, seq[pos - 1], topology.get(pos, "unknown"),
-                    "Supported", "用户补充TSV", 0.55, "ext-TSV", [], get_context(seq, pos)))
-    except Exception:
-        pass
-
     # iPTMnet 位点若与 UniProt 实验证据吻合, 合并后自动升级为 Verified
     records = merge_records(records)
     records.sort(key=lambda r: (-LAYER_SCORE[r["layer"]], -r["score"]))

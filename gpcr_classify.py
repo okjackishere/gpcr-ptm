@@ -9,7 +9,7 @@ B=stable/偏好arrestin2), 不是 GPCRdb 的 GRAFS 分子分类。
   B(首选): Table S2 内置映射表 (accession → class), 一手实验数据
   A(回退): 最长 ICL3 残基数 (原文阈值 <~5aa 或 >100aa)
 
-用于 predict_phospho 的 pXpp 区域过滤(见 PLAN_pXpp_grouping.md)。
+用于 predict_phospho 的 pXpp 区域过滤。
 """
 
 # Table S2: accession → class (Isaikina 2023 Mol Cell)

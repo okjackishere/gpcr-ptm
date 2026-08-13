@@ -8,14 +8,19 @@
 
 ### 安装依赖
 
-```bash
-pip install -r requirements.txt
+```text
+requests>=2.28
 ```
 
 ### 网页界面
 
+网页服务基于 Python 标准库，无需额外安装 Web 框架。
+
 ```bash
-python webapp.py
+python webapp.py                 # 默认 http://127.0.0.1:8000，启动后自动打开浏览器
+python webapp.py --port 9000     # 自定义端口
+python webapp.py --host 0.0.0.0  # 允许局域网访问
+python webapp.py --no-browser    # 启动后不自动打开浏览器
 ```
 
 ### 命令行界面
@@ -36,7 +41,7 @@ python main.py OPRM1 --verbose
 
 1. **motif扫描** —— 在序列中搜索公认的共识motif，每类 PTM 背后都有明确的生化机制：
 
-   - **磷酸化** 扫描丝氨酸/苏氨酸上的激酶共识（PKA、PKC、CK1、CK2、CDK/MAPK 等经典 motif，源自 GPS 等磷酸化预测器的共识体系）。GRK（GPCR 激酶）没有可靠的线性 motif，仅以"邻近酸性残基 + S/T 簇集"作弱位置提示。此外还扫描 **GPCR 专属的 pXpp 三磷酸簇 `[S/T]-X-[S/T]-[S/T]`**——三个磷酸化 S/T 残基（p 代表磷酸化的 S/T，不是脯氨酸），是 arrestin 募集的关键模块。pXpp 在不同 GPCR 中的分布位置不同：趋化因子/肽类受体（class B）的 pXpp 富集于 C 端尾，胺类受体如多巴胺/肾上腺素能（class A）的 pXpp 则富集于较长的第三胞内环（ICL3）。因此程序会先按受体的 arrestin 行为判组（依据 Isaikina 2023 的 Table S2 实验分类，28 个受体；未命中者按 ICL3 长度回退），**只在 pXpp 典型分布的区域报告，过滤原文标明 pXpp 缺失的区域**——例如 class A 受体的 C 端尾 pXpp 命中会被过滤，反之 class B 受体的 ICL3 pXpp 会被过滤。
+   - **磷酸化** 扫描丝氨酸/苏氨酸上的激酶共识（PKA、PKC、CK1、CK2、CDK/MAPK 等经典 motif，源自 GPS 等磷酸化预测器的共识体系）。GRK（GPCR 激酶）没有可靠的线性 motif，仅以"邻近酸性残基 + S/T 簇集"作弱位置提示。此外还扫描 **GPCR 专属的 pXpp 三磷酸簇 `[S/T]-X-[S/T]-[S/T]`**——三个磷酸化 S/T 残基（p 代表磷酸化的 S/T，不是脯氨酸），是 arrestin 募集的关键模块。pXpp 在不同 GPCR 中的分布位置不同：趋化因子/肽类受体（class B）的 pXpp 富集于 C 端尾，胺类受体如多巴胺/肾上腺素能（class A）的 pXpp 则富集于较长的第三胞内环（ICL3）。因此程序会先按受体的 arrestin 行为判组（依据 Isaikina 2023 的 Table S2 实验分类，26 个受体；未命中者按 ICL3 长度回退），**只在 pXpp 典型分布的区域报告，过滤原文标明 pXpp 缺失的区域**——例如 class A 受体的 C 端尾 pXpp 命中会被过滤，反之 class B 受体的 ICL3 pXpp 会被过滤。
    - **N-糖基化** 扫描 N-X-S/T sequon（X≠P）。糖基化的本质是膜表面 trafficking 的质量控——缺少糖基化的受体会滞留胞内、难以到达细胞膜，但糖基化位点在 N 端还是胞外环并不关键（任一处都能补救表面表达）。
    - **棕榈酰化** 扫描胞内半胱氨酸（Cys），重点是 TM7 后膜旁区的 Cys——硫酯键把 Cys 锚定到质膜内侧，形成"第四胞内环"，稳定受体构象。
    - **泛素化**（保守版）扫描胞内赖氨酸（Lys）+ 邻近 PPxY 或 Pro-rich 区。泛素化决定受体内吞后的去向（降解或循环）；Nedd4 家族 E3 连接酶通过其 WW 结构域识别底物的 PPxY (P-P-x-Y) motif 来完成泛素化"挂载"。但 PPxY 多出现在 adaptor 蛋白（如 ARRDC3）上而非 GPCR 自身，因此此规则只能作保守弱提示，恒低置信。
@@ -59,7 +64,7 @@ python main.py OPRM1 --verbose
 
 这套规则本质是序列 motif + 膜拓扑 + 跨物种保守性的启发式组合，不是机器学习模型（如 NetPhos 或 PhosphoSitePlus 的 SVM/DNN），也没有做溶剂可及性计算（用"胞内环 + C 端尾"作膜可及性代理）。具体到各类 PTM：
 
-- **磷酸化**没有强线性 motif，假阳性偏高——这也是程序设置保守度权重而非单纯 motif 匹配的原因。pXpp 三磷酸簇的判组过滤依赖 Table S2 的 28 个受体（一手实验数据），未命中的受体走 ICL3 长度回退：只有 ICL3 明确很短（<~5aa）或很长（>100aa）才能判组，中间地带（5–100aa）无法判组、两区 pXpp 均保留（不过滤）。"多磷酸化簇"标注是基于局部 S/T 密度的代理，真正的 barcode 取决于磷酸化位点的组合与排列而非单纯密度，所以这些标注只能定位候选区，不能判定确切的磷酸化模式。
+- **磷酸化**没有强线性 motif，假阳性偏高——这也是程序设置保守度权重而非单纯 motif 匹配的原因。pXpp 三磷酸簇的判组过滤依赖 Table S2 的 26 个受体（一手实验数据），未命中的受体走 ICL3 长度回退：只有 ICL3 明确很短（<~5aa）或很长（>100aa）才能判组，中间地带（5–100aa）无法判组、两区 pXpp 均保留（不过滤）。"多磷酸化簇"标注是基于局部 S/T 密度的代理，真正的 barcode 取决于磷酸化位点的组合与排列而非单纯密度，所以这些标注只能定位候选区，不能判定确切的磷酸化模式。
 - **泛素化**无可靠线性共识，PPxY 又常位于 adaptor（ARRDC3 等）而非 GPCR 自身，故 adaptor 介导的泛素化无法检出；该规则仅作保守弱提示，恒低置信、需实验确认。
 - **保守性**通过精确基因名查直系同源，主要命中哺乳动物，保守区域易饱和到接近 1.0。
 

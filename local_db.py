@@ -5,7 +5,6 @@ Supports:
   - UniProt Swiss-Prot flat file (uniprot_sprot_human.dat)
     * now also parses /evidence=ECO:... so curated experimental sites are not
       silently downgraded
-  - User-supplied extensions TSV (data/ptm_extensions.tsv)
 """
 import os
 import re
@@ -106,27 +105,3 @@ def parse_uniprot_flat_file(path=None):
 
     flush_feature()
     return ptm_map
-
-
-def parse_extensions_tsv(path=None):
-    """Parse user-supplied TSV: accession\\tposition\\tptm_type\\tsource"""
-    if path is None:
-        path = os.path.join(os.path.dirname(__file__), "data", "ptm_extensions.tsv")
-    if not os.path.exists(path):
-        return {}
-    result = {}
-    with open(path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            parts = line.split("\t")
-            if len(parts) < 3:
-                continue
-            acc, pos_str, ptm = parts[0], parts[1], parts[2]
-            try:
-                pos = int(pos_str)
-            except ValueError:
-                continue
-            result.setdefault(acc, {})[pos] = ptm
-    return result
