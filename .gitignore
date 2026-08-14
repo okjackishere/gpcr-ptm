@@ -15,6 +15,7 @@ data/pmid_abstract_cache.json
 data/*.dat
 data/*.dat.gz
 data/dbptm.txt
+data/dbptm.db
 data/iptmnet_ptm.txt
 
 # 编辑器 / 系统

@@ -7,7 +7,8 @@ Usage:
   python update_ptm_db.py --iptmnet        # download iPTMnet bulk ptm.txt
   python update_ptm_db.py --all            # download both
 
-dbPTM URL is configurable via env var DBPTM_URL (defaults to the CUHK host).
+dbPTM 默认从 2025 新站 (NYCU Biomics Lab) 下载四类实验文件并合并;
+亦可用 --dbptm-url 或环境变量 DBPTM_URL 指定单个文件的镜像地址。
 """
 import argparse
 import os

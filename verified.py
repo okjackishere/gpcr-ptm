@@ -208,26 +208,35 @@ def extract_verified(entry, iptmnet_data, topology, progress=None):
             "Supported", detail, score, "iPTMnet", pmids, get_context(seq, pos)))
 
     # ------------------------------------------------------------------
-    # 4. dbPTM / iPTMnet-bulk / extensions TSV (offline bulk files)
+    # 4. dbPTM (SQLite 按蛋白查询) / iPTMnet-bulk (离线 bulk 文件)
     # ------------------------------------------------------------------
+    def _append_bulk(sites, label):
+        for pos, info in sites.items():
+            if not (1 <= pos <= len(seq)):
+                continue
+            # dbPTM 2025 的 PMID 列是分号分隔的多个值, 拆开逐条核验
+            pmids = [x for x in (info.get("pmid") or "").split(";") if x]
+            records.append(_record(
+                info["ptm_type"], pos, seq[pos - 1], topology.get(pos, "unknown"),
+                "Supported",
+                f"{label}数据库记录" + (f"; PMID:{','.join(pmids)}" if pmids else ""),
+                0.7 if pmids else 0.6,
+                label, pmids, get_context(seq, pos)))
+
     try:
-        from ptm_sources import parse_dbptm_tsv, parse_iptmnet_bulk
-        for parser, label in ((parse_dbptm_tsv, "dbPTM"), (parse_iptmnet_bulk, "iPTMnet-bulk")):
-            try:
-                data = parser()
-            except Exception:
-                data = {}
-            if acc in data:
-                for pos, info in data[acc].items():
-                    if not (1 <= pos <= len(seq)):
-                        continue
-                    pmid = info.get("pmid") or ""
-                    records.append(_record(
-                        info["ptm_type"], pos, seq[pos - 1], topology.get(pos, "unknown"),
-                        "Supported",
-                        f"{label}数据库记录" + (f"; PMID:{pmid}" if pmid else ""),
-                        0.7 if pmid else 0.6,
-                        label, [pmid] if pmid else [], get_context(seq, pos)))
+        from ptm_sources import query_dbptm
+        _append_bulk(query_dbptm(acc), "dbPTM")
+    except Exception:
+        pass
+
+    try:
+        from ptm_sources import parse_iptmnet_bulk
+        try:
+            data = parse_iptmnet_bulk()
+        except Exception:
+            data = {}
+        if acc in data:
+            _append_bulk(data[acc], "iPTMnet-bulk")
     except Exception:
         pass
 
