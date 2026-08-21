@@ -216,6 +216,24 @@ def test_pxpp_filter_none_keeps_both():
     print("  ok: None/magenta 两区 pXpp 都保留")
 
 
+def test_ck1_priming_direction():
+    """CK1 共识 pS/pT-x-x-S/T: 潜在引物须在候选位点上游 i-3 (Venerando 2014)。
+    修正前代码检查 i+3, 方向相反 (把引物位点错当靶位点)。"""
+    # S@21 为潜在引物, S@24 在其 +3 下游 -> CK1 应命中 24 (而非 21)
+    seq = "M" * 20 + "SAASTAAAA"
+    preds = predict_phospho(seq, _topo(30, 20, 21))
+    ck1 = {p["position"] for p in preds if "CK1" in p["motif"]}
+    assert 24 in ck1, f"CK1 应命中引物下游的 24: {ck1}"
+    assert 21 not in ck1, f"引物位点自身(21)不应因下游 S/T 命中 CK1: {ck1}"
+    # 反向验证: T@24 上游(21)无 S/T -> 24 不命中; S@27 上游 24 有 T -> 27 命中
+    seq2 = "M" * 20 + "AAATAASAAA"
+    preds2 = predict_phospho(seq2, _topo(30, 20, 21))
+    ck1_2 = {p["position"] for p in preds2 if "CK1" in p["motif"]}
+    assert 24 not in ck1_2, f"上游无引物的 24 不应命中 CK1 (旧 i+3 检查的误报): {ck1_2}"
+    assert 27 in ck1_2, f"CK1 应命中有上游引物(T@24)的 27: {ck1_2}"
+    print("  ok: CK1 引物方向为 i-3 (24 引物→27 命中; 上游无引物不误报)")
+
+
 def main():
     tests = [
         test_pxpp_detection_and_proximal_and_cluster,
@@ -226,6 +244,7 @@ def main():
         test_ubi_negative_no_signal,
         test_ubi_topology_gate_extracellular,
         test_regression_no_keyerror_all_types,
+        test_ck1_priming_direction,
         test_table_s2_mapping,
         test_classify_table_s2_hit,
         test_classify_icl3_length_fallback,

@@ -9,6 +9,10 @@ Caveats (scientific):
   - GRK has no reliable linear motif; the "GRK-candidate" rule below is only a
     weak positional hint (juxtamembrane intracellular Ser/Thr with nearby
     acidic residues), flagged low confidence.
+  - CK1 targets require a primed pS/pT three residues UPSTREAM of the target
+    (pS/pT-x-x-S/T, Venerando 2014). The sequence alone cannot confirm the
+    primer is actually phosphorylated, so CK1 stays the lowest-weight kinase
+    hint (always Low confidence).
   - Ubiquitination: no simple linear consensus, but a conservative predictor
     flags intracellular Lys near a PPxY motif (Nedd4 WW-domain docking) or a
     Pro-rich stretch; always Low confidence, a weak hint only. PPxY is often
@@ -41,7 +45,7 @@ MOTIF_DESC = {
     "pXpp": "pXpp: [S/T]x[S/T][S/T] (Isaikina 2023, arrestin2募集保守motif)",
     "PKC": "PKC: [S/T]x[R/K]",
     "CK2": "CK2: [S/T]xx[D/E]",
-    "CK1": "CK1: [S/T]xx[pS/pT] (需引物磷酸化)",
+    "CK1": "CK1: p[S/T]-x-x-[S/T] (引物在i-3且需已磷酸化; 序列无法确认引物状态, 仅弱提示)",
     "GRK-candidate": "GRK无可靠线性motif, 仅位置提示(低置信)",
 }
 
@@ -63,6 +67,9 @@ REFS = {
     "kinase": [{"short": "Xue 2005·NAR (GPS)",
                 "title": "GPS: a Comprehensive WWW Server for Phosphorylation Sites Prediction",
                 "url": "https://doi.org/10.1093/nar/gki393"}],
+    "CK1": [{"short": "Venerando 2014·Biochem J",
+             "title": "Casein Kinase: the Triple Meaning of a Misnomer",
+             "url": "https://doi.org/10.1042/BJ20140178"}],
     "glycosylation": [{"short": "Rodriguez 1995·JBC",
                        "title": "Role of N-Glycosylation for Functional Expression of the Human PAF Receptor",
                        "url": "https://doi.org/10.1074/jbc.270.42.25178"}],
@@ -127,9 +134,11 @@ def _dedup_refs(refs):
 
 
 def _motif_refs(motif_name):
-    """激酶 motif 的支撑文献: pXpp 用 Isaikina 2023, 其余通用激酶共识用 GPS 2005。"""
+    """激酶 motif 的支撑文献: pXpp 用 Isaikina 2023, CK1 用 Venerando 2014, 其余通用激酶共识用 GPS 2005。"""
     if "pXpp" in motif_name:
         return REFS["pXpp"]
+    if motif_name == "CK1":
+        return REFS["CK1"]
     return REFS["kinase"]
 
 
@@ -162,8 +171,9 @@ def predict_phospho(sequence, topology, group=None):
         # CK2: [S/T]xx[D/E] -> acidic at i+2 or i+3
         if any(c in "DE" for c in sequence[idx + 2:idx + 4]):
             motifs.append("CK2")
-        # CK1 priming: [S/T]xx[pS/pT] -> S/T at i+3
-        if idx + 3 < seq_len and sequence[idx + 3] in "ST":
+        # CK1 priming: pS/pT-x-x-[S/T] -> 潜在引物 S/T 须在 i-3 (引物自身须已磷酸化,
+        # 纯序列无法确认其状态; 规范方向见 Venerando 2014, 故仅作最低权重弱提示)
+        if i >= 4 and sequence[idx - 3] in "ST":
             motifs.append("CK1")
         # proline-directed: [S/T]P;  [S/T]Px[RK] is a better CDK/MAPK hit
         if i < seq_len and sequence[idx + 1] == "P":
